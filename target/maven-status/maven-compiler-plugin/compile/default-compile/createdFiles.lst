@@ -1,0 +1,6 @@
+hkmu\comps380f\model\Attachment.class
+hkmu\comps380f\view\DownloadingView.class
+hkmu\comps380f\model\Course.class
+hkmu\comps380f\controller\IndexController.class
+hkmu\comps380f\controller\CourseController.class
+hkmu\comps380f\controller\CourseController$Form.class
