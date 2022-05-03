@@ -8,7 +8,7 @@ public class IndexController {
 
     @GetMapping
     public String index() {
-        return "redirect:/course/list";
+        return "redirect:/course/listCourse";
     }
 
     @GetMapping("/cslogin")

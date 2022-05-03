@@ -33,15 +33,15 @@ public class CourseController {
 */
             
     // Controller methods, Form object, ...
-    @GetMapping({"", "/list"}) 
+    @GetMapping({"", "/listCourse"}) 
     public String list(ModelMap model) { 
         model.addAttribute("courseDatabase", courseRepo.getCourses()); 
-        return "list"; 
+        return "listCourse"; 
     }
 
     @GetMapping("/create")
     public ModelAndView create() {
-        return new ModelAndView("add", "courseForm", new Form());
+        return new ModelAndView("addCourse", "courseForm", new Form());
     }
 
     public static class Form {
@@ -80,18 +80,18 @@ public class CourseController {
      public String create(Form form, Principal principal) throws IOException { 
      long courseId = courseRepo.createCourse(principal.getName(), 
                 form.getSubject(), form.getBody(), form.getAttachments()); 
-        return "redirect:/course/view/" + courseId; 
+        return "redirect:/course/viewCourse/" + courseId; 
     } 
 
-    @GetMapping("/view/{courseId}") 
+    @GetMapping("/viewCourse/{courseId}") 
     public String view(@PathVariable("courseId") long courseId, ModelMap model) { 
         List<Course> courses = courseRepo.getCourse(courseId); 
         if (courses.isEmpty()) { 
-            return "redirect:/course/list"; 
+            return "redirect:/course/listCourse"; 
         } 
         model.addAttribute("courseId", courseId); 
         model.addAttribute("course", courses.get(0)); 
-        return "view"; 
+        return "viewCourse"; 
     } 
 
     @GetMapping("/{courseId}/attachment/{attachment:.+}") 
@@ -102,33 +102,34 @@ public class CourseController {
             return new DownloadingView(attachment.getName(), 
                     attachment.getMimeContentType(), attachment.getContents()); 
         } 
-        return new RedirectView("/course/list", true); 
+        return new RedirectView("/course/listCourse", true); 
     } 
 
     @GetMapping("/{courseId}/delete/{attachment:.+}") 
     public String deleteAttachment(@PathVariable("courseId") long courseId, 
             @PathVariable("attachment") String name) { 
         courseRepo.deleteAttachment(courseId, name); 
-        return "redirect:/course/edit/" + courseId; 
+        return "redirect:/course/editCourse/" + courseId; 
     } 
 
     @GetMapping("/delete/{courseId}") 
     public String deleteCourse(@PathVariable("courseId") long courseId) { 
         courseRepo.deleteCourse(courseId); 
-        return "redirect:/course/list"; 
+        return "redirect:/course/listCourse"; 
     }
     
-    @GetMapping("/edit/{courseId}") 
+    // show course edit page and edit it
+    @GetMapping("/editCourse/{courseId}") 
     public ModelAndView showEdit(@PathVariable("courseId") long courseId, 
             Principal principal, HttpServletRequest request) { 
         List<Course> courses = courseRepo.getCourse(courseId); 
         if (courses.isEmpty() 
                 || (!request.isUserInRole("ROLE_ADMIN") 
                 && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
-            return new ModelAndView(new RedirectView("/course/list", true)); 
+            return new ModelAndView(new RedirectView("/course/listCourse", true)); 
         } 
         Course course = courses.get(0); 
-        ModelAndView modelAndView = new ModelAndView("edit"); 
+        ModelAndView modelAndView = new ModelAndView("editCourse"); 
         modelAndView.addObject("courseId", courseId); 
         modelAndView.addObject("course", course); 
         Form courseForm = new Form(); 
@@ -138,17 +139,18 @@ public class CourseController {
         return modelAndView; 
     } 
 
-    @PostMapping("/edit/{courseId}") 
+    // post edited course
+    @PostMapping("/editCourse/{courseId}") 
     public String edit(@PathVariable("courseId") long courseId, Form form, 
             Principal principal, HttpServletRequest request) throws IOException { 
         List<Course> courses = courseRepo.getCourse(courseId); 
         if (courses.isEmpty() 
                 || (!request.isUserInRole("ROLE_ADMIN") 
                 && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
-            return "redirect:/course/list"; 
+            return "redirect:/course/listCourse"; 
         } 
         courseRepo.updateCourse(courseId, form.getSubject(), 
                 form.getBody(), form.getAttachments()); 
-        return "redirect:/course/view/" + courseId; 
+        return "redirect:/course/viewCourse/" + courseId; 
     }
 }
