@@ -1,16 +1,16 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package hkmu.comps380f.controller;
 
+import hkmu.comps380f.dao.CourseRepository;
 import hkmu.comps380f.model.Attachment;
 import hkmu.comps380f.model.Course;
 import hkmu.comps380f.view.DownloadingView;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,117 +22,133 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.view.RedirectView;
 
-/**
- *
- * @author Issac
- */
-
-// Add course(s)
 @Controller 
 @RequestMapping("/course") 
-public class CourseController {
-    private volatile long COURSE_ID_SEQUENCE = 1; 
-    private Map<Long, Course> courseDatabase = new ConcurrentHashMap<>(); 
- 
-    // Controller methods, Form object, ... 
-    @GetMapping(value = {"", "/listCourses"}) 
+public class CourseController { 
+    @Resource 
+    private CourseRepository courseRepo; 
+    /*
+    private volatile long COURSE_ID_SEQUENCE = 1;
+    private Map<Long, Course> courseDatabase = new ConcurrentHashMap<>();
+*/
+            
+    // Controller methods, Form object, ...
+    @GetMapping({"", "/list"}) 
     public String list(ModelMap model) { 
-        model.addAttribute("courseDatabase", courseDatabase); 
-        return "listCourses"; 
-    } 
-    
-    @GetMapping("/create") 
-    public ModelAndView create() { 
-        return new ModelAndView("addCourse", "courseForm", new Form()); 
-    } 
+        model.addAttribute("courseDatabase", courseRepo.getCourses()); 
+        return "list"; 
+    }
 
-    public static class Form { 
-        private String customerName; 
-        private String subject; 
-        private String body; 
-        private List<MultipartFile> attachments; 
-        
-        // Getters and Setters of customerName, subject, body, attachments
-        public void setCustomerName(String customerName) {
-            this.customerName = customerName;
+    @GetMapping("/create")
+    public ModelAndView create() {
+        return new ModelAndView("add", "courseForm", new Form());
+    }
+
+    public static class Form {
+
+        private String subject;
+        private String body;
+        private List<MultipartFile> attachments;
+
+        // Getters and Setters of subject, body, attachments
+        public String getSubject() {
+            return subject;
         }
 
         public void setSubject(String subject) {
             this.subject = subject;
         }
 
-        public void setBody(String body) {
-            this.body = body;
-        }
-
-        public void setAttachments(List<MultipartFile> attachments) {
-            this.attachments = attachments;
-        }
-        
-        public String getCustomerName() {
-            return customerName;
-        }
-
-        public String getSubject() {
-            return subject;
-        }
-
         public String getBody() {
             return body;
+        }
+
+        public void setBody(String body) {
+            this.body = body;
         }
 
         public List<MultipartFile> getAttachments() {
             return attachments;
         }
-    }
-    
-    @PostMapping("/create") 
-    public View create(Form form) throws IOException { 
-        Course course = new Course(); 
-        course.setId(this.getNextCourseId()); 
-        course.setCustomerName(form.getCustomerName()); 
-        course.setSubject(form.getSubject()); 
-        course.setBody(form.getBody()); 
 
-        for (MultipartFile filePart : form.getAttachments()) { 
-            Attachment attachment = new Attachment(); 
-            attachment.setName(filePart.getOriginalFilename()); 
-            attachment.setMimeContentType(filePart.getContentType()); 
-            attachment.setContents(filePart.getBytes()); 
-            if (attachment.getName() != null && attachment.getName().length() > 0 
-                && attachment.getContents() != null && attachment.getContents().length > 0) 
-                course.addAttachment(attachment); 
-        } 
-        this.courseDatabase.put(course.getId(), course); 
-        return new RedirectView("/course/viewCourse/" + course.getId(), true); 
+        public void setAttachments(List<MultipartFile> attachments) {
+            this.attachments = attachments;
+        }
+    }
+
+    @PostMapping("/create") 
+     public String create(Form form, Principal principal) throws IOException { 
+     long courseId = courseRepo.createCourse(principal.getName(), 
+                form.getSubject(), form.getBody(), form.getAttachments()); 
+        return "redirect:/course/view/" + courseId; 
     } 
 
-    private synchronized long getNextCourseId() { 
-        return this.COURSE_ID_SEQUENCE++; 
-    }
-    
-    @GetMapping("/viewCourse/{courseId}") 
-    public String view(@PathVariable("courseId") long courseId,  
-                       ModelMap model) { 
-        Course course = this.courseDatabase.get(courseId); 
-        if (course == null) { 
-            return "redirect:/course/listCourses"; 
+    @GetMapping("/view/{courseId}") 
+    public String view(@PathVariable("courseId") long courseId, ModelMap model) { 
+        List<Course> courses = courseRepo.getCourse(courseId); 
+        if (courses.isEmpty()) { 
+            return "redirect:/course/list"; 
         } 
         model.addAttribute("courseId", courseId); 
-        model.addAttribute("course", course); 
-        return "viewCourse"; 
-    }
-    
+        model.addAttribute("course", courses.get(0)); 
+        return "view"; 
+    } 
+
     @GetMapping("/{courseId}/attachment/{attachment:.+}") 
     public View download(@PathVariable("courseId") long courseId, 
-                         @PathVariable("attachment") String name) { 
-        Course course = this.courseDatabase.get(courseId); 
-        if (course != null) { 
-            Attachment attachment = course.getAttachment(name); 
-            if (attachment != null) 
-                return new DownloadingView(attachment.getName(), 
-                        attachment.getMimeContentType(), attachment.getContents()); 
+            @PathVariable("attachment") String name) { 
+        Attachment attachment = courseRepo.getAttachment(courseId, name); 
+        if (attachment != null) { 
+            return new DownloadingView(attachment.getName(), 
+                    attachment.getMimeContentType(), attachment.getContents()); 
         } 
-        return new RedirectView("/course/listCourses", true); 
+        return new RedirectView("/course/list", true); 
     } 
+
+    @GetMapping("/{courseId}/delete/{attachment:.+}") 
+    public String deleteAttachment(@PathVariable("courseId") long courseId, 
+            @PathVariable("attachment") String name) { 
+        courseRepo.deleteAttachment(courseId, name); 
+        return "redirect:/course/edit/" + courseId; 
+    } 
+
+    @GetMapping("/delete/{courseId}") 
+    public String deleteCourse(@PathVariable("courseId") long courseId) { 
+        courseRepo.deleteCourse(courseId); 
+        return "redirect:/course/list"; 
+    }
+    
+    @GetMapping("/edit/{courseId}") 
+    public ModelAndView showEdit(@PathVariable("courseId") long courseId, 
+            Principal principal, HttpServletRequest request) { 
+        List<Course> courses = courseRepo.getCourse(courseId); 
+        if (courses.isEmpty() 
+                || (!request.isUserInRole("ROLE_ADMIN") 
+                && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
+            return new ModelAndView(new RedirectView("/course/list", true)); 
+        } 
+        Course course = courses.get(0); 
+        ModelAndView modelAndView = new ModelAndView("edit"); 
+        modelAndView.addObject("courseId", courseId); 
+        modelAndView.addObject("course", course); 
+        Form courseForm = new Form(); 
+        courseForm.setSubject(course.getSubject()); 
+        courseForm.setBody(course.getBody()); 
+        modelAndView.addObject("courseForm", courseForm); 
+        return modelAndView; 
+    } 
+
+    @PostMapping("/edit/{courseId}") 
+    public String edit(@PathVariable("courseId") long courseId, Form form, 
+            Principal principal, HttpServletRequest request) throws IOException { 
+        List<Course> courses = courseRepo.getCourse(courseId); 
+        if (courses.isEmpty() 
+                || (!request.isUserInRole("ROLE_ADMIN") 
+                && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
+            return "redirect:/course/list"; 
+        } 
+        courseRepo.updateCourse(courseId, form.getSubject(), 
+                form.getBody(), form.getAttachments()); 
+        return "redirect:/course/view/" + courseId; 
+    }
 }
