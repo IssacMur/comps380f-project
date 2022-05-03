@@ -1,8 +1,8 @@
 package hkmu.comps380f.controller;
 
-import hkmu.comps380f.dao.CourseRepository;
+import hkmu.comps380f.dao.LectureRepository;
 import hkmu.comps380f.model.Attachment;
-import hkmu.comps380f.model.Course;
+import hkmu.comps380f.model.Lecture;
 import hkmu.comps380f.view.DownloadingView;
 import java.io.IOException;
 import java.security.Principal;
@@ -26,22 +26,22 @@ import org.springframework.web.servlet.view.RedirectView;
 @RequestMapping("/course") 
 public class CourseController { 
     @Resource 
-    private CourseRepository courseRepo; 
+    private LectureRepository lectureRepo; 
     /*
     private volatile long COURSE_ID_SEQUENCE = 1;
     private Map<Long, Course> courseDatabase = new ConcurrentHashMap<>();
 */
             
     // Controller methods, Form object, ...
-    @GetMapping({"", "/list"}) 
+    @GetMapping({"", "/listLecture"}) 
     public String list(ModelMap model) { 
-        model.addAttribute("courseDatabase", courseRepo.getCourses()); 
-        return "list"; 
+        model.addAttribute("lectureDatabase", lectureRepo.getLectures()); 
+        return "listLecture"; 
     }
 
-    @GetMapping("/create")
+    @GetMapping("/createLecture")
     public ModelAndView create() {
-        return new ModelAndView("add", "courseForm", new Form());
+        return new ModelAndView("addLecture", "lectureForm", new Form());
     }
 
     public static class Form {
@@ -76,79 +76,81 @@ public class CourseController {
         }
     }
 
-    @PostMapping("/create") 
+    @PostMapping("/createLecture") 
      public String create(Form form, Principal principal) throws IOException { 
-     long courseId = courseRepo.createCourse(principal.getName(), 
+     long lectureId = lectureRepo.createLecture(principal.getName(), 
                 form.getSubject(), form.getBody(), form.getAttachments()); 
-        return "redirect:/course/view/" + courseId; 
+        return "redirect:/course/viewLecture/" + lectureId; 
     } 
 
-    @GetMapping("/view/{courseId}") 
-    public String view(@PathVariable("courseId") long courseId, ModelMap model) { 
-        List<Course> courses = courseRepo.getCourse(courseId); 
-        if (courses.isEmpty()) { 
-            return "redirect:/course/list"; 
+    @GetMapping("/viewLecture/{lectureId}") 
+    public String view(@PathVariable("lectureId") long lectureId, ModelMap model) { 
+        List<Lecture> lectures = lectureRepo.getLecture(lectureId); 
+        if (lectures.isEmpty()) { 
+            return "redirect:/course/listLecture"; 
         } 
-        model.addAttribute("courseId", courseId); 
-        model.addAttribute("course", courses.get(0)); 
-        return "view"; 
+        model.addAttribute("lectureId", lectureId); 
+        model.addAttribute("lecture", lectures.get(0)); 
+        return "viewLecture"; 
     } 
 
-    @GetMapping("/{courseId}/attachment/{attachment:.+}") 
-    public View download(@PathVariable("courseId") long courseId, 
+    @GetMapping("/{lectureId}/attachment/{attachment:.+}") 
+    public View download(@PathVariable("lectureId") long lectureId, 
             @PathVariable("attachment") String name) { 
-        Attachment attachment = courseRepo.getAttachment(courseId, name); 
+        Attachment attachment = lectureRepo.getAttachment(lectureId, name); 
         if (attachment != null) { 
             return new DownloadingView(attachment.getName(), 
                     attachment.getMimeContentType(), attachment.getContents()); 
         } 
-        return new RedirectView("/course/list", true); 
+        return new RedirectView("/course/listLecture", true); 
     } 
 
-    @GetMapping("/{courseId}/delete/{attachment:.+}") 
-    public String deleteAttachment(@PathVariable("courseId") long courseId, 
+    @GetMapping("/{lectureId}/delete/{attachment:.+}") 
+    public String deleteAttachment(@PathVariable("lectureId") long lectureId, 
             @PathVariable("attachment") String name) { 
-        courseRepo.deleteAttachment(courseId, name); 
-        return "redirect:/course/edit/" + courseId; 
+        lectureRepo.deleteAttachment(lectureId, name); 
+        return "redirect:/course/editLecture/" + lectureId; 
     } 
 
-    @GetMapping("/delete/{courseId}") 
-    public String deleteCourse(@PathVariable("courseId") long courseId) { 
-        courseRepo.deleteCourse(courseId); 
-        return "redirect:/course/list"; 
+    @GetMapping("/delete/{lectureId}") 
+    public String deleteLecture(@PathVariable("lectureId") long lectureId) { 
+        lectureRepo.deleteLecture(lectureId); 
+        return "redirect:/course/listLecture"; 
     }
     
-    @GetMapping("/edit/{courseId}") 
-    public ModelAndView showEdit(@PathVariable("courseId") long courseId, 
+    // show course edit page and edit it
+    @GetMapping("/editLecture/{lectureId}") 
+    public ModelAndView showEdit(@PathVariable("lectureId") long lectureId, 
             Principal principal, HttpServletRequest request) { 
-        List<Course> courses = courseRepo.getCourse(courseId); 
-        if (courses.isEmpty() 
+        List<Lecture> lectures = lectureRepo.getLecture(lectureId); 
+        if (lectures.isEmpty() 
                 || (!request.isUserInRole("ROLE_ADMIN") 
-                && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
-            return new ModelAndView(new RedirectView("/course/list", true)); 
+                && !principal.getName().equals(lectures.get(0).getLecturerName()))) { 
+            return new ModelAndView(new RedirectView("/course/listLecture", true)); 
         } 
-        Course course = courses.get(0); 
-        ModelAndView modelAndView = new ModelAndView("edit"); 
-        modelAndView.addObject("courseId", courseId); 
-        modelAndView.addObject("course", course); 
-        Form courseForm = new Form(); 
-        courseForm.setSubject(course.getSubject()); 
-        courseForm.setBody(course.getBody()); 
-        modelAndView.addObject("courseForm", courseForm); 
+        Lecture lecture = lectures.get(0); 
+        ModelAndView modelAndView = new ModelAndView("editLecture"); 
+        modelAndView.addObject("lectureId", lectureId); 
+        modelAndView.addObject("lecture", lecture); 
+        Form lectureForm = new Form(); 
+        lectureForm.setSubject(lecture.getSubject()); 
+        lectureForm.setBody(lecture.getBody()); 
+        modelAndView.addObject("lectureForm", lectureForm); 
         return modelAndView; 
     } 
 
-    @PostMapping("/edit/{courseId}") 
-    public String edit(@PathVariable("courseId") long courseId, Form form, 
+    // post edited course
+    @PostMapping("/editLecture/{lectureId}") 
+    public String edit(@PathVariable("lectureId") long lectureId, Form form, 
             Principal principal, HttpServletRequest request) throws IOException { 
-        List<Course> courses = courseRepo.getCourse(courseId); 
-        if (courses.isEmpty() 
+        List<Lecture> lectures = lectureRepo.getLecture(lectureId); 
+        if (lectures.isEmpty() 
                 || (!request.isUserInRole("ROLE_ADMIN") 
-                && !principal.getName().equals(courses.get(0).getLecturerName()))) { 
-            return "redirect:/course/list"; 
+                && !principal.getName().equals(lectures.get(0).getLecturerName()))) { 
+            return "redirect:/course/listLecture"; 
         } 
-        courseRepo.updateCourse(courseId, form.getSubject(), 
+        lectureRepo.updateLecture(lectureId, form.getSubject(), 
                 form.getBody(), form.getAttachments()); 
-        return "redirect:/course/view/" + courseId; 
+        return "redirect:/course/viewLecture/" + lectureId; 
     }
 }

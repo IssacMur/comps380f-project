@@ -1,13 +1,13 @@
-variable changed:
-lab08->project
-	add.jsp->addCourse.jsp
-	list.jsp->listCourse.jsp
-	view.jsp->viewCourse.jsp
-	TicketController->CourseController
-	ticket->course
+changed variable from lap 11 to 380_project
 
-lab9
-	customer->lecturer
-	username->userid
-	edit.jsp->editCourse.jsp
-	role: user->stud, admin->lect
+/Web Pages/META-INF/context.xml
+	<Context path="/lab11"/> -> <Context path="/380_project"/>
+
+database name
+	custsupport -> webCourse
+
+/Web Pages/WEB-INF/jsp/view/..
+	Ticket(s) -> Lecture(s) (if small letter, follow it)
+	Customer(s) -> Lecture(s)
+
+add, edit, list, view.jsp -> xxxCourse.jsp
