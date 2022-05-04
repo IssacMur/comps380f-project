@@ -66,7 +66,7 @@ public class CourseRepositoryImpl implements CourseRepository {
                     Attachment attachment = new Attachment(); 
                     attachment.setName(rs.getString("filename")); 
                     attachment.setMimeContentType(rs.getString("content_type")); 
-                    attachment.setCourseId(id); 
+                    attachment.setLectureId(id); 
                     course.addAttachment(attachment); 
                 } 
             } 
@@ -192,7 +192,7 @@ public class CourseRepositoryImpl implements CourseRepository {
             Blob blob = rs.getBlob("content"); 
             byte[] bytes = blob.getBytes(1l, (int) blob.length()); 
             entry.setContents(bytes); 
-            entry.setCourseId(rs.getInt("course_id")); 
+            entry.setLectureId(rs.getInt("course_id")); 
             return entry; 
         } 
     } 

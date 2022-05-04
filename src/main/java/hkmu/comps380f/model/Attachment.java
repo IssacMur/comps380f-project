@@ -6,7 +6,7 @@ public class Attachment implements Serializable {
     private String name; 
     private String mimeContentType; 
     private byte[] contents; 
-    private long courseId; 
+    private long lectureId; 
  
     // getters and setters of all properties
     public String getName() {
@@ -33,12 +33,12 @@ public class Attachment implements Serializable {
         this.contents = contents;
     }
 
-    public long getCourseId() {
-        return courseId;
+    public long getLectureId() {
+        return lectureId;
     }
 
-    public void setCourseId(long courseId) {
-        this.courseId = courseId;
+    public void setLectureId(long lectureId) {
+        this.lectureId = lectureId;
     }
     
 }
