@@ -21,7 +21,7 @@ create table users (
     password varchar(50) NOT NULL, 
     PRIMARY KEY(username)
 );
-/*
+
 create table poll (
     subject_id varchar(50) NOT NULL,
     username varchar(50) NOT NULL,  
@@ -29,7 +29,7 @@ create table poll (
     PRIMARY KEY(username, subject_id),
     FOREIGN KEY(username) REFERENCES users(username)
 );
-
+/*
 create table pollQ (
     subject_id varchar(50) NOT NULL,
     username varchar(50) NOT NULL,
